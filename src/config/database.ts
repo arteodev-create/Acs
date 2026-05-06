@@ -12,16 +12,22 @@ type PgClient = {
 };
 
 const isProduction = process.env.NODE_ENV === 'production';
-const requiredInProduction = ['DATABASE_URL'];
+const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
+const hasProductionPgConfig = Boolean(
+    (process.env.PGHOST || process.env.POSTGRES_HOST || process.env.SUPABASE_DB_HOST) &&
+    (process.env.PGDATABASE || process.env.POSTGRES_DB || process.env.SUPABASE_DB_NAME) &&
+    (process.env.PGUSER || process.env.POSTGRES_USER || process.env.SUPABASE_DB_USER) &&
+    (process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD || process.env.SUPABASE_DB_PASSWORD)
+);
 
 if (isProduction) {
-    const missing = requiredInProduction.filter((key) => !process.env[key]);
-    if (missing.length > 0) {
-        throw new Error(`Missing required production database environment variables: ${missing.join(', ')}`);
+    if (!databaseUrl && !hasProductionPgConfig) {
+        throw new Error(
+            'Missing production database configuration. Set DATABASE_URL, SUPABASE_DB_URL, POSTGRES_URL, or the PGHOST/PGDATABASE/PGUSER/PGPASSWORD variables.'
+        );
     }
 }
 
-const databaseUrl = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
 const dbHost = process.env.PGHOST || process.env.POSTGRES_HOST || process.env.SUPABASE_DB_HOST || '127.0.0.1';
 const dbPort = Number(process.env.PGPORT || process.env.POSTGRES_PORT || process.env.SUPABASE_DB_PORT || 5432);
 const dbName = process.env.PGDATABASE || process.env.POSTGRES_DB || process.env.SUPABASE_DB_NAME || 'recode_social';
